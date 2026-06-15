@@ -9,6 +9,17 @@ abstract class BasePage {
         if ( isset( $_GET['oka_notice'] ) ) {
             echo '<div class="notice notice-success"><p>' . esc_html__( 'Action completed.', 'onkupon-agent' ) . '</p></div>';
         }
+        if ( isset( $_GET['oka_run_now'] ) ) {
+            $actions = absint( wp_unslash( $_GET['oka_actions'] ?? 0 ) );
+            $scheduler = sanitize_text_field( wp_unslash( $_GET['oka_scheduler'] ?? 'unknown' ) );
+            $message = sprintf(
+                /* translators: 1: number of actions, 2: scheduler availability. */
+                __( 'Run Now queued %1$d action(s). Action Scheduler available: %2$s. Check WooCommerce → Status → Scheduled Actions for pending and failed jobs.', 'onkupon-agent' ),
+                $actions,
+                $scheduler
+            );
+            echo '<div class="notice notice-success"><p>' . esc_html( $message ) . '</p></div>';
+        }
     }
 
     protected function footer(): void {

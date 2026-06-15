@@ -46,6 +46,7 @@ class Plugin {
             'preferred_products'           => '',
             'min_quality_score'            => 70,
             'max_risk_score'               => 35,
+            'min_article_words'            => 250,
             'openai_base_url'              => 'https://api.openai.com/v1',
             'openai_model'                 => 'gpt-4o-mini',
             'openai_temperature'           => 0.3,

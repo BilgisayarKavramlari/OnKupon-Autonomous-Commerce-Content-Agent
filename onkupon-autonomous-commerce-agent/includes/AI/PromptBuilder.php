@@ -1,16 +1,32 @@
 <?php
 namespace OnKupon\Agent\AI;
 
+use OnKupon\Agent\Plugin;
+
 class PromptBuilder {
     public function article_prompt( array $products, array $research, array $strategy = [] ): string {
+        $min_words = max( 50, absint( Plugin::settings()['min_article_words'] ?? 250 ) );
         $payload = [
-            'instruction' => 'Return strict JSON only for a factual OnKupon editorial article. Do not create customer reviews, fake ratings, medical/legal/financial guarantees, or unsupported claims.',
+            'instruction' => 'Return JSON only for a factual OnKupon editorial article. Do not use markdown fences. Do not include prose outside JSON. Do not create customer reviews, fake ratings, medical/legal/financial guarantees, or unsupported claims.',
+            'body_requirements' => [
+                'body must be at least ' . $min_words . ' words',
+                'for Turkish content, write natural Turkish paragraphs with clear headings',
+                'include concise_answer near the top',
+                'include product-aware explanation sections that naturally reference relevant OnKupon products',
+                'include FAQ entries when appropriate',
+                'include a clear call to action',
+            ],
+            'score_requirements' => [
+                'quality_score must be a 0-100 integer',
+                'risk_score must be a 0-100 integer',
+            ],
+            'min_article_words' => $min_words,
             'required_fields' => array_keys( $this->article_schema()['properties'] ),
             'products' => $products,
             'research' => $research,
             'strategy' => $strategy,
         ];
-        return wp_json_encode( $payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
+        return wp_json_encode( $payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
     }
 
     public function article_schema(): array {
