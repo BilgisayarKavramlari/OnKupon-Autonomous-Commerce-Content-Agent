@@ -1,0 +1,2 @@
+<?php
+namespace OnKupon\Agent\Publishing; class SchemaWriter { public function register(): void { add_action('wp_head',[$this,'output']); } public function output(): void { if(!is_singular('post') || !\OnKupon\Agent\Plugin::settings()['schema_enabled']) return; $schema=['@context'=>'https://schema.org','@type'=>'Article','headline'=>get_the_title(),'datePublished'=>get_the_date('c'),'publisher'=>['@type'=>'Organization','name'=>get_bloginfo('name')]]; echo '<script type="application/ld+json">'.wp_json_encode($schema).'</script>'; } }
