@@ -1,0 +1,11 @@
+{
+"name": "onkupon-autonomous-commerce-agent",
+"version": "0.1.0",
+"private": true,
+"description": "Admin assets for OnKupon Autonomous Commerce Agent.",
+"scripts": {
+"build": "echo 'No build step yet'",
+"test": "echo 'No JS tests yet'"
+},
+"devDependencies": {}
+}
