@@ -1,0 +1,2 @@
+<?php
+namespace OnKupon\Agent\Learning; class LearningEngine { public function update(): void { if(!\OnKupon\Agent\Plugin::settings()["learning_enabled"]) return; (new StrategyWeightsRepository())->update("publishing_hour",(string)current_time("G"),0.01); } }
