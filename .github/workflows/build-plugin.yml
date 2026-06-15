@@ -1,0 +1,58 @@
+name: Build WordPress Plugin ZIP
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: Run PHP syntax lint
+        shell: bash
+        run: |
+          set -euo pipefail
+          find onkupon-autonomous-commerce-agent -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Build plugin ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          PLUGIN_DIR="onkupon-autonomous-commerce-agent"
+          BUILD_DIR=".onkupon-agent-build"
+          ZIP_FILE="onkupon-autonomous-commerce-agent.zip"
+          rm -rf "$BUILD_DIR" "$ZIP_FILE"
+          mkdir -p "$BUILD_DIR/$PLUGIN_DIR"
+          rsync -a --delete \
+            --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude 'vendor' \
+            --exclude 'dist' \
+            --exclude 'build' \
+            --exclude 'tests' \
+            --exclude '*.zip' \
+            --exclude '.DS_Store' \
+            --exclude '.env' \
+            --exclude '.env.*' \
+            "$PLUGIN_DIR/" "$BUILD_DIR/$PLUGIN_DIR/"
+          ( cd "$BUILD_DIR" && zip -qr "../$ZIP_FILE" "$PLUGIN_DIR" )
+          rm -rf "$BUILD_DIR"
+          test -f "$ZIP_FILE"
+
+      - name: Upload plugin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: onkupon-autonomous-commerce-agent
+          path: onkupon-autonomous-commerce-agent.zip
+          if-no-files-found: error
