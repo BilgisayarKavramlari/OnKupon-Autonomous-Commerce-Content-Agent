@@ -1,0 +1,23 @@
+{
+"name": "onkupon/autonomous-commerce-agent",
+"description": "Autonomous AI content and commerce agent for WordPress and WooCommerce.",
+"type": "wordpress-plugin",
+"license": "proprietary",
+"autoload": {
+"psr-4": {
+"OnKupon\AutonomousAgent\": "includes/"
+}
+},
+"require": {
+"php": ">=8.1"
+},
+"require-dev": {
+"squizlabs/php_codesniffer": "^3.10",
+"wp-coding-standards/wpcs": "^3.1",
+"phpunit/phpunit": "^9.6"
+},
+"scripts": {
+"phpcs": "phpcs --standard=phpcs.xml",
+"phpcbf": "phpcbf --standard=phpcs.xml"
+}
+}
