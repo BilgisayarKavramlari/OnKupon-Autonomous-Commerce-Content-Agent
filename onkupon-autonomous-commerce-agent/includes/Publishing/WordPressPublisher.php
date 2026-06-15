@@ -18,6 +18,8 @@ class WordPressPublisher {
         if ( ! $validation['valid'] ) {
             ( new Logger() )->log( 'warning', 'validation', 'Article rejected', $validation['diagnostics'] ?? [ 'errors' => $validation['errors'] ] );
             $this->record_rejected_attempt( $article, $validation );
+            ( new Logger() )->log( 'info', 'social', 'Social sharing skipped because article was not published', [ 'final_status' => 'rejected', 'post_id' => 0 ] );
+            ( new ActionTimelineRepository() )->record( 'social_sharing', 'skipped', [ 'notes' => 'Social sharing skipped because article was not published', 'metadata' => [ 'final_status' => 'rejected' ] ] );
             return 0;
         }
         $article = $validation['article'] ?? $article;
@@ -56,6 +58,7 @@ class WordPressPublisher {
         ( new FeaturedImageManager() )->assign( (int) $post_id, $article );
         ( new SEOManager() )->apply( (int) $post_id, $article );
         $this->queue_social_posts( (int) $post_id, $article );
+        ( new Logger() )->log( 'info', 'social', 'Social posts queued for published article', [ 'post_id' => (int) $post_id, 'platforms' => [ 'linkedin', 'x', 'facebook', 'instagram', 'quora_suggestion' ] ] );
         ( new ActionTimelineRepository() )->record(
             'post_published',
             'published',
@@ -98,6 +101,15 @@ class WordPressPublisher {
             'slug' => sanitize_title( (string) ( $article['slug'] ?? '' ) ),
             'word_count' => absint( $diagnostics['word_count'] ?? 0 ),
             'body_char_length' => absint( $diagnostics['body_char_length'] ?? 0 ),
+            'target_article_words' => absint( $diagnostics['target_article_words'] ?? 0 ),
+            'section_count' => absint( $diagnostics['section_count'] ?? 0 ),
+            'faq_count' => absint( $diagnostics['faq_count'] ?? 0 ),
+            'product_link_count' => absint( $diagnostics['product_link_count'] ?? 0 ),
+            'retry_count' => absint( $article['_onkupon_retry_count'] ?? 0 ),
+            'expansion_attempted' => ! empty( $article['_onkupon_expansion_attempted'] ),
+            'final_status' => 'rejected',
+            'validation_status' => 'rejected',
+            'final_word_count' => absint( $diagnostics['word_count'] ?? 0 ),
             'quality_score' => isset( $diagnostics['quality_score'] ) ? (float) $diagnostics['quality_score'] : null,
             'risk_score' => isset( $diagnostics['risk_score'] ) ? (float) $diagnostics['risk_score'] : null,
             'related_product_ids' => array_map( 'absint', (array) ( $diagnostics['related_product_ids'] ?? $article['related_product_ids'] ?? [] ) ),

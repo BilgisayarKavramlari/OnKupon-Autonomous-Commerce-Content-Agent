@@ -55,6 +55,19 @@ class SocialQueueRepository {
         }
     }
 
+    public function create_dry_run_for_latest_post(): int {
+        global $wpdb;
+        $post_id = (int) $wpdb->get_var( "SELECT p.ID FROM {$wpdb->posts} p INNER JOIN {$wpdb->postmeta} pm ON p.ID=pm.post_id AND pm.meta_key='_onkupon_agent_generated' WHERE p.post_type='post' AND p.post_status='publish' ORDER BY p.ID DESC LIMIT 1" );
+        if ( ! $post_id ) {
+            ( new Logger() )->log( 'warning', 'social', 'Social dry run skipped because no published OnKupon Agent post exists' );
+            return 0;
+        }
+        $id = $this->queue( new SocialPost( 'dry_run', 'Dry-run social queue test for: ' . get_permalink( $post_id ), $post_id ) );
+        $wpdb->update( $wpdb->prefix . 'onkupon_agent_social_queue', [ 'status' => 'dry_run', 'last_error' => 'Dry run only; no external provider called.', 'updated_at' => current_time( 'mysql' ) ], [ 'id' => $id ] );
+        ( new ActionTimelineRepository() )->record( 'social_dry_run', 'dry_run', [ 'object_type' => 'social_queue', 'object_id' => $id, 'notes' => 'Dry-run social queue item created without external posting', 'metadata' => [ 'post_id' => $post_id, 'post_url' => get_permalink( $post_id ) ] ] );
+        return $id;
+    }
+
     private function provider_for( string $platform ): ?SocialProviderInterface {
         return match ( $platform ) {
             'linkedin' => new LinkedInProvider(),

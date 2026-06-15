@@ -8,25 +8,31 @@ class ContentValidator {
         $article = $this->normalize_scores( $article );
         $schema_result = ( new JsonSchemaValidator() )->validate( $article, ( new PromptBuilder() )->article_schema() );
         $errors = $schema_result['errors'];
-        $body = (string) ( $article['body'] ?? $this->structured_body( $article ) );
+        $error_codes = array_fill( 0, count( $errors ), 'schema_error' );
+        $body = $this->full_article_text( $article );
         $plain = wp_strip_all_tags( $body );
         $word_count = $this->word_count( $plain );
         $min_words = $this->min_article_words();
 
         if ( $word_count < $min_words ) {
             $errors[] = 'Content is too thin';
+            $error_codes[] = 'thin_content';
         }
         if ( (float) ( $article['quality_score'] ?? 0 ) < (float) Plugin::settings()['min_quality_score'] ) {
             $errors[] = 'Quality score below minimum';
+            $error_codes[] = 'quality_below_minimum';
         }
         if ( (float) ( $article['risk_score'] ?? 100 ) > (float) Plugin::settings()['max_risk_score'] ) {
             $errors[] = 'Risk score above maximum';
+            $error_codes[] = 'risk_above_maximum';
         }
         if ( preg_match( '/fake review|guaranteed cure|5-star customer|limited time miracle|risk-free profit/i', $plain ) ) {
             $errors[] = 'Unsafe or deceptive claim detected';
+            $error_codes[] = 'unsafe_claim';
         }
         if ( $this->keyword_stuffed( $plain ) ) {
             $errors[] = 'Keyword stuffing detected';
+            $error_codes[] = 'keyword_stuffing';
         }
 
         return [
@@ -34,7 +40,7 @@ class ContentValidator {
             'errors' => $errors,
             'sanitized' => wp_kses_post( $body ),
             'article' => $article,
-            'diagnostics' => $this->diagnostics( $article, $plain, $word_count, $min_words, $errors ),
+            'diagnostics' => $this->diagnostics( $article, $plain, $word_count, $min_words, $errors, $error_codes ),
         ];
     }
 
@@ -47,7 +53,7 @@ class ContentValidator {
     }
 
     private function min_article_words(): int {
-        return max( 50, absint( Plugin::settings()['min_article_words'] ?? 600 ) );
+        return max( 100, absint( Plugin::settings()['min_article_words'] ?? 600 ) );
     }
 
     private function normalize_scores( array $article ): array {
@@ -63,16 +69,22 @@ class ContentValidator {
         return $article;
     }
 
-    private function diagnostics( array $article, string $plain, int $word_count, int $min_words, array $errors ): array {
+    private function diagnostics( array $article, string $plain, int $word_count, int $min_words, array $errors, array $error_codes ): array {
         $preview = function_exists( 'mb_substr' ) ? mb_substr( $plain, 0, 500 ) : substr( $plain, 0, 500 );
         $char_length = function_exists( 'mb_strlen' ) ? mb_strlen( $plain ) : strlen( $plain );
 
         return [
             'word_count' => $word_count,
             'min_article_words' => $min_words,
+            'target_article_words' => absint( Plugin::settings()['target_article_words'] ?? 900 ),
             'body_char_length' => $char_length,
+            'section_count' => count( (array) ( $article['sections'] ?? [] ) ),
+            'faq_count' => count( (array) ( $article['faq'] ?? [] ) ),
+            'product_link_count' => count( (array) ( $article['product_mentions'] ?? [] ) ),
             'language' => sanitize_text_field( (string) ( Plugin::settings()['content_language'] ?? 'en' ) ),
             'validator_method' => 'unicode_preg_match_all',
+            'error_codes' => array_values( array_unique( $error_codes ) ),
+            'error_code' => $error_codes[0] ?? '',
             'title' => sanitize_text_field( (string) ( $article['seo_title'] ?? $article['title'] ?? '' ) ),
             'quality_score' => isset( $article['quality_score'] ) ? (float) $article['quality_score'] : null,
             'risk_score' => isset( $article['risk_score'] ) ? (float) $article['risk_score'] : null,
@@ -110,5 +122,9 @@ class ContentValidator {
         }
         $parts[] = (string) ( $article['cta'] ?? '' );
         return implode( "\n\n", $parts );
+    }
+
+    private function full_article_text( array $article ): string {
+        return trim( (string) ( $article['body'] ?? '' ) . "\n\n" . $this->structured_body( $article ) );
     }
 }

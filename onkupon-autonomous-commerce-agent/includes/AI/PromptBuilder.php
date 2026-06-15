@@ -6,12 +6,19 @@ use OnKupon\Agent\Plugin;
 class PromptBuilder {
     public function article_prompt( array $products, array $research, array $strategy = [] ): string {
         $settings = Plugin::settings();
-        $min_words = max( 50, absint( $settings['min_article_words'] ?? 600 ) );
+        $min_words = max( 100, absint( $settings['min_article_words'] ?? 600 ) );
         $target_words = max( $min_words, absint( $settings['target_article_words'] ?? 900 ) );
         $payload = [
             'instruction' => 'Return JSON only for a factual OnKupon editorial article. Do not use markdown fences. Do not include prose outside JSON. Do not create customer reviews, fake ratings, medical/legal/financial guarantees, or unsupported claims.',
             'body_requirements' => [
-                'structured sections, concise_answer, FAQ, and CTA together must target ' . $target_words . ' words and never be below ' . $min_words . ' words',
+                'total article body must be at least ' . $min_words . ' words',
+                'target length should be ' . $target_words . ' words',
+                'include at least 5 substantial sections',
+                'each section body should be at least 100-150 words',
+                'FAQ answers should be at least 50-80 words each',
+                'do not return short summary content',
+                'do not compress the article',
+                'write complete Turkish paragraphs when content_language = tr',
                 'use Turkish if content_language is tr; write natural Turkish paragraphs with clear headings',
                 'include concise_answer near the top',
                 'include product-aware explanation sections that naturally reference relevant OnKupon products',

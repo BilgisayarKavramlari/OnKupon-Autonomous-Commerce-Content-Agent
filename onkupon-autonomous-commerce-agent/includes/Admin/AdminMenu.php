@@ -123,6 +123,12 @@ class AdminMenu {
                 $redirect_args['oka_actions'] = 1;
                 $redirect_args['oka_scheduler'] = 'synchronous-debug';
                 break;
+            case 'test-social-queue':
+                $queue_id = ( new \OnKupon\Agent\Social\SocialQueueRepository() )->create_dry_run_for_latest_post();
+                $redirect_args['oka_run_now'] = 1;
+                $redirect_args['oka_actions'] = $queue_id ? 1 : 0;
+                $redirect_args['oka_scheduler'] = 'dry-run';
+                break;
             case 'collect-metrics':
                 $bridge->enqueue( 'onkupon_agent_metrics' );
                 break;

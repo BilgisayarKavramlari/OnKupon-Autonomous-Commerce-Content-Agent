@@ -14,6 +14,10 @@ class ContentTimelinePage extends BasePage {
                     esc_html( (string) ( $r['object_id'] ?? '' ) ),
                     esc_html( wp_trim_words( $r['error_message'] ?? '', 12 ) ),
                     esc_html( (string) ( $metadata['word_count'] ?? '' ) ),
+                    esc_html( (string) ( $metadata['initial_word_count'] ?? '' ) ),
+                    esc_html( (string) ( $metadata['final_word_count'] ?? '' ) ),
+                    esc_html( (string) ( $metadata['retry_count'] ?? '' ) ),
+                    esc_html( (string) ( $metadata['validation_status'] ?? $r['status'] ?? '' ) ),
                     esc_html( (string) ( $metadata['quality_score'] ?? '' ) ),
                     esc_html( (string) ( $metadata['risk_score'] ?? '' ) ),
                     esc_html( is_array( $metadata['categories'] ?? null ) ? implode( ', ', $metadata['categories'] ) : (string) ( $metadata['categories'] ?? '' ) ),
@@ -27,7 +31,7 @@ class ContentTimelinePage extends BasePage {
             $this->recent_rows( 'onkupon_agent_actions' )
         );
         $this->header( __( 'Content Timeline', 'onkupon-agent' ) );
-        $this->table( [ 'Date', 'Status', 'Action', 'Object ID', 'Notes', 'Word count', 'Quality score', 'Risk score', 'Categories', 'Tags', 'Related products', 'Post URL', 'Social', 'Preview' ], $rows );
+        $this->table( [ 'Date', 'Status', 'Action', 'Object ID', 'Notes', 'Word count', 'Initial words', 'Final words', 'Retries', 'Validation', 'Quality score', 'Risk score', 'Categories', 'Tags', 'Related products', 'Post URL', 'Social', 'Preview' ], $rows );
         $this->footer();
     }
 }

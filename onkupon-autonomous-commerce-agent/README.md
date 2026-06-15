@@ -96,10 +96,11 @@ If the admin log shows `warning | validation | Article rejected` with `Content i
 Recommended fixes:
 
 - Increase `openai_max_tokens` so the model has enough output budget for a long-form article.
-- Lower `min_article_words` temporarily for testing; the setting defaults to `250` and the UI enforces a minimum of `50`.
+- Lower `min_article_words` temporarily for testing; the setting defaults to `600` and the UI enforces a minimum of `100`.
 - Ensure WooCommerce has active product data so the prompt can build product-aware sections.
 - Ensure the prompt asks for a long-form body; the built-in prompt explicitly requires at least `min_article_words`, natural Turkish paragraphs with headings, concise answer, FAQ, product-aware sections, and CTA.
 - Review the validation log context, which includes word count, minimum required words, body character length, title, scores, related product IDs, a sanitized body preview, and rejection reasons.
+- If the only rejection reason is thin content, the content job retries with `ArticleExpansionService` up to two times before the final rejection is persisted.
 
 To inspect scheduled jobs in WordPress Admin, open **WooCommerce → Status → Scheduled Actions** and search for `onkupon_agent_content`, `onkupon_agent_research`, or `onkupon_agent_product_scan`.
 
