@@ -16,13 +16,18 @@ class ContentTimelinePage extends BasePage {
                     esc_html( (string) ( $metadata['word_count'] ?? '' ) ),
                     esc_html( (string) ( $metadata['quality_score'] ?? '' ) ),
                     esc_html( (string) ( $metadata['risk_score'] ?? '' ) ),
+                    esc_html( is_array( $metadata['categories'] ?? null ) ? implode( ', ', $metadata['categories'] ) : (string) ( $metadata['categories'] ?? '' ) ),
+                    esc_html( is_array( $metadata['tags'] ?? null ) ? implode( ', ', $metadata['tags'] ) : (string) ( $metadata['tags'] ?? '' ) ),
+                    esc_html( is_array( $metadata['related_products'] ?? $metadata['related_product_ids'] ?? null ) ? implode( ', ', $metadata['related_products'] ?? $metadata['related_product_ids'] ) : '' ),
+                    ! empty( $metadata['post_url'] ) ? '<a href="' . esc_url( (string) $metadata['post_url'] ) . '">' . esc_html__( 'View', 'onkupon-agent' ) . '</a>' : '',
+                    esc_html( (string) ( $metadata['social_queue_status'] ?? '' ) ),
                     esc_html( wp_trim_words( $metadata['body_preview'] ?? '', 30 ) ),
                 ];
             },
             $this->recent_rows( 'onkupon_agent_actions' )
         );
         $this->header( __( 'Content Timeline', 'onkupon-agent' ) );
-        $this->table( [ 'Date', 'Status', 'Action', 'Object ID', 'Notes', 'Word count', 'Quality score', 'Risk score', 'Preview' ], $rows );
+        $this->table( [ 'Date', 'Status', 'Action', 'Object ID', 'Notes', 'Word count', 'Quality score', 'Risk score', 'Categories', 'Tags', 'Related products', 'Post URL', 'Social', 'Preview' ], $rows );
         $this->footer();
     }
 }

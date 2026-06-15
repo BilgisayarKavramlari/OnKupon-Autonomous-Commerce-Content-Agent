@@ -152,3 +152,55 @@ bash onkupon-autonomous-commerce-agent/bin/build-zip.sh
 ```
 
 The ZIP is generated locally in the repository root and ignored by git.
+
+## Scheduler Health
+
+Open **OnKupon Agent → Scheduler Health** to inspect Action Scheduler availability, WP-Cron status, registered callbacks, pending/complete/failed/canceled job counts, next scheduled times, fallback WP-Cron events, and recommended fixes.
+
+### Why OnKupon jobs may not appear in Scheduled Actions
+
+OnKupon jobs can be missing if the plugin was activated before Action Scheduler loaded, WooCommerce is disabled, or scheduled actions were manually cleared. The plugin now runs a lightweight admin self-healing check and repairs missing recurring jobs when Action Scheduler is available. Use **Control Center → Reschedule All Jobs** to force registration.
+
+### How to reschedule all jobs
+
+Go to **OnKupon Agent → Control Center** and click **Reschedule All Jobs**. This clears OnKupon scheduled actions and recreates defaults without duplicating existing hooks.
+
+### WP-Cron fallback
+
+If Action Scheduler functions are unavailable, immediate job requests use WP-Cron single-event fallback. If `DISABLE_WP_CRON` is true, configure real cron to process due events.
+
+## Article formatting
+
+Generated articles are requested as structured JSON and formatted into WordPress/Gutenberg-compatible blocks: headings, paragraphs, tables, FAQ sections, CTA blocks, and product-card shortcode blocks. Raw Markdown headings, Markdown links, and fenced code blocks are rejected before publishing.
+
+## Category/tag/author/featured-image management
+
+The publisher assigns post categories through `CategoryManager`, tags through `TagManager`, author through `AuthorManager`, and featured images through `FeaturedImageManager`. Configure default category, allowlisted categories, default author, and default featured image from settings.
+
+## AIOSEO integration
+
+The plugin detects All in One SEO defensively. When available, it writes common AIOSEO meta fields for SEO title, description, Open Graph, Twitter/X metadata, and focus keyphrase. It always writes generic OnKupon SEO metadata as fallback.
+
+## LinkedIn OAuth setup
+
+LinkedIn posting must use official OAuth/API access. Configure LinkedIn app credentials externally, use the redirect URI shown in **Integrations**, request `w_member_social` for member posting and `w_organization_social` plus an organization URN for organization posting. Browser-login automation, passwords, and cookies are not supported.
+
+## X OAuth setup
+
+X posting must use official OAuth/API access and `POST /2/tweets`. Configure X app credentials externally, use the redirect URI shown in **Integrations**, and consider enabling text-only mode because link-containing posts can have different cost and policy implications.
+
+## Quora manual suggestions
+
+Quora remains manual suggestion mode unless a compliant official organic posting API is configured. The plugin can generate answer suggestions for manual copy/review, but it does not automate browser posting.
+
+## Troubleshooting: Run Now logs audit only
+
+If **Run Now** only creates an audit log, check the notice for queued action count and scheduler availability, then open **WooCommerce → Status → Scheduled Actions** and filter `onkupon_agent_*`. For immediate debugging, use **Run Content Generation Now (synchronous debug)** from Control Center.
+
+## Troubleshooting: raw markdown links or headings
+
+If an AI response contains `### Heading`, `[title](url)`, or fenced code blocks, the formatter rejects it before publishing. Increase `openai_max_tokens`, use the structured prompt schema, and inspect Content Timeline rejection previews.
+
+## Troubleshooting: no scheduled actions
+
+Open **Scheduler Health**. If Action Scheduler is unavailable, confirm WooCommerce/Action Scheduler is active. If callbacks exist but actions are missing, click **Reschedule All Jobs**. If WP-Cron is disabled, configure the recommended server cron.

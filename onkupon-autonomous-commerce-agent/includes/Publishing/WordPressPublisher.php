@@ -2,8 +2,10 @@
 namespace OnKupon\Agent\Publishing;
 
 use OnKupon\Agent\AI\ContentValidator;
+use OnKupon\Agent\Logging\ActionTimelineRepository;
 use OnKupon\Agent\Logging\Logger;
 use OnKupon\Agent\Plugin;
+use OnKupon\Agent\SEO\SEOManager;
 use OnKupon\Agent\Social\SocialQueueRepository;
 use OnKupon\Agent\Social\SocialPost;
 
@@ -19,19 +21,28 @@ class WordPressPublisher {
             return 0;
         }
         $article = $validation['article'] ?? $article;
+        $formatted = ( new ContentFormatter() )->format( $article );
+        if ( ( new ContentFormatter() )->has_raw_markdown( $formatted ) ) {
+            $validation['errors'][] = 'Formatted content still contains raw Markdown';
+            $validation['diagnostics']['body_preview'] = sanitize_textarea_field( wp_strip_all_tags( $formatted ) );
+            $this->record_rejected_attempt( $article, $validation );
+            return 0;
+        }
         $post_id = wp_insert_post(
             [
                 'post_title'   => sanitize_text_field( $article['seo_title'] ),
                 'post_name'    => sanitize_title( $article['slug'] ),
                 'post_excerpt' => sanitize_text_field( $article['excerpt'] ),
-                'post_content' => $validation['sanitized'],
+                'post_content' => $formatted,
                 'post_status'  => 'publish',
                 'post_type'    => 'post',
+                'post_author'  => ( new AuthorManager() )->author_id(),
                 'meta_input'   => [
                     '_onkupon_agent_generated' => 1,
                     '_onkupon_quality_score'   => (float) $article['quality_score'],
                     '_onkupon_risk_score'      => (float) $article['risk_score'],
                     '_onkupon_related_products'=> wp_json_encode( array_map( 'absint', $article['related_product_ids'] ?? [] ) ),
+                    '_onkupon_agent_faq'       => wp_json_encode( (array) ( $article['faq'] ?? [] ) ),
                 ],
             ],
             true
@@ -40,7 +51,30 @@ class WordPressPublisher {
             ( new Logger() )->log( 'error', 'publishing', 'Post creation failed', [ 'error' => $post_id->get_error_message() ] );
             return 0;
         }
+        $categories = ( new CategoryManager() )->assign( (int) $post_id, $article );
+        $tags = ( new TagManager() )->assign( (int) $post_id, $article );
+        ( new FeaturedImageManager() )->assign( (int) $post_id, $article );
+        ( new SEOManager() )->apply( (int) $post_id, $article );
         $this->queue_social_posts( (int) $post_id, $article );
+        ( new ActionTimelineRepository() )->record(
+            'post_published',
+            'published',
+            [
+                'object_type' => 'post',
+                'object_id' => (int) $post_id,
+                'notes' => 'Article published',
+                'metadata' => [
+                    'post_url' => get_permalink( (int) $post_id ),
+                    'word_count' => $validation['diagnostics']['word_count'] ?? 0,
+                    'quality_score' => $article['quality_score'] ?? null,
+                    'risk_score' => $article['risk_score'] ?? null,
+                    'categories' => $categories,
+                    'tags' => $tags,
+                    'related_products' => array_map( 'absint', (array) ( $article['related_product_ids'] ?? [] ) ),
+                    'social_queue_status' => 'queued',
+                ],
+            ]
+        );
         return (int) $post_id;
     }
 
@@ -70,6 +104,7 @@ class WordPressPublisher {
             'body_preview' => sanitize_textarea_field( (string) ( $diagnostics['body_preview'] ?? '' ) ),
             'model' => sanitize_text_field( (string) ( Plugin::settings()['openai_model'] ?? '' ) ),
             'run_uuid' => sanitize_text_field( (string) ( $article['run_uuid'] ?? $article['_onkupon_run_uuid'] ?? '' ) ),
+            'prompt_version' => 'structured-v2',
             'rejection_reasons' => $errors,
         ];
 

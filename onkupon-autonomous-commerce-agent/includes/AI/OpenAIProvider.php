@@ -2,6 +2,7 @@
 namespace OnKupon\Agent\AI;
 
 use OnKupon\Agent\Logging\Logger;
+use OnKupon\Agent\Logging\ActionTimelineRepository;
 use OnKupon\Agent\Plugin;
 use OnKupon\Agent\Security\RateLimiter;
 use OnKupon\Agent\Security\SecretsManager;
@@ -18,11 +19,13 @@ class OpenAIProvider implements AIProviderInterface {
         $data = json_decode( $text, true );
         if ( ! is_array( $data ) ) {
             ( new Logger() )->log( 'warning', 'ai', 'OpenAI-compatible provider returned invalid JSON' );
+            ( new ActionTimelineRepository() )->record( 'ai_invalid_json', 'failed', [ 'notes' => 'OpenAI-compatible provider returned invalid JSON', 'metadata' => [ 'model' => $this->settings['openai_model'] ?? '' ] ] );
             return [];
         }
         $validation = ( new JsonSchemaValidator() )->validate( $data, $schema );
         if ( ! $validation['valid'] ) {
             ( new Logger() )->log( 'warning', 'ai', 'Generated JSON failed schema validation', [ 'errors' => $validation['errors'] ] );
+            ( new ActionTimelineRepository() )->record( 'ai_invalid_json', 'failed', [ 'notes' => implode( '; ', $validation['errors'] ), 'metadata' => [ 'model' => $this->settings['openai_model'] ?? '' ] ] );
             return [];
         }
         return $data;

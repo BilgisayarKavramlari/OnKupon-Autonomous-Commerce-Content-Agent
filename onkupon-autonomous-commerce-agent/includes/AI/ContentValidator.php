@@ -8,7 +8,7 @@ class ContentValidator {
         $article = $this->normalize_scores( $article );
         $schema_result = ( new JsonSchemaValidator() )->validate( $article, ( new PromptBuilder() )->article_schema() );
         $errors = $schema_result['errors'];
-        $body = (string) ( $article['body'] ?? '' );
+        $body = (string) ( $article['body'] ?? $this->structured_body( $article ) );
         $plain = wp_strip_all_tags( $body );
         $word_count = $this->word_count( $plain );
         $min_words = $this->min_article_words();
@@ -47,7 +47,7 @@ class ContentValidator {
     }
 
     private function min_article_words(): int {
-        return max( 50, absint( Plugin::settings()['min_article_words'] ?? 250 ) );
+        return max( 50, absint( Plugin::settings()['min_article_words'] ?? 600 ) );
     }
 
     private function normalize_scores( array $article ): array {
@@ -96,5 +96,19 @@ class ContentValidator {
         $counts = array_count_values( $words );
         rsort( $counts );
         return ( (int) ( $counts[0] ?? 0 ) / $total ) > 0.08;
+    }
+
+    private function structured_body( array $article ): string {
+        $parts = [ (string) ( $article['concise_answer'] ?? '' ) ];
+        foreach ( (array) ( $article['sections'] ?? [] ) as $section ) {
+            $parts[] = (string) ( $section['heading'] ?? '' );
+            $parts[] = (string) ( $section['body'] ?? '' );
+        }
+        foreach ( (array) ( $article['faq'] ?? [] ) as $faq ) {
+            $parts[] = (string) ( $faq['question'] ?? '' );
+            $parts[] = (string) ( $faq['answer'] ?? '' );
+        }
+        $parts[] = (string) ( $article['cta'] ?? '' );
+        return implode( "\n\n", $parts );
     }
 }

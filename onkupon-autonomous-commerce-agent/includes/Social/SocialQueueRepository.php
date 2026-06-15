@@ -2,6 +2,7 @@
 namespace OnKupon\Agent\Social;
 
 use OnKupon\Agent\Logging\Logger;
+use OnKupon\Agent\Logging\ActionTimelineRepository;
 
 class SocialQueueRepository {
     public function queue( SocialPost $post, ?string $scheduled_at = null ): int {
@@ -22,7 +23,9 @@ class SocialQueueRepository {
                 'updated_at'     => current_time( 'mysql' ),
             ]
         );
-        return (int) $wpdb->insert_id;
+        $id = (int) $wpdb->insert_id;
+        ( new ActionTimelineRepository() )->record( 'social_post_queued', 'queued', [ 'object_type' => 'social_queue', 'object_id' => $id, 'notes' => 'Social post queued', 'metadata' => [ 'platform' => $post->platform, 'article_id' => $post->post_id, 'utm_url' => get_permalink( $post->post_id ) ] ] );
+        return $id;
     }
 
     public function publish_due(): void {
@@ -32,6 +35,7 @@ class SocialQueueRepository {
             $provider = $this->provider_for( (string) $row->platform );
             if ( ! $provider || ! $provider->validateConnection() ) {
                 $wpdb->update( $wpdb->prefix . 'onkupon_agent_social_queue', [ 'status' => 'failed', 'last_error' => 'Provider not configured', 'updated_at' => current_time( 'mysql' ) ], [ 'id' => (int) $row->id ] );
+                ( new ActionTimelineRepository() )->record( 'social_post_failed', 'failed', [ 'object_type' => 'social_queue', 'object_id' => (int) $row->id, 'notes' => 'Provider not configured', 'metadata' => [ 'platform' => $row->platform ] ] );
                 continue;
             }
             $result = $provider->publish( new SocialPost( (string) $row->platform, (string) $row->message, (int) $row->post_id ) );
@@ -47,6 +51,7 @@ class SocialQueueRepository {
                 [ 'id' => (int) $row->id ]
             );
             ( new Logger() )->log( 'info', 'social', 'Social post processed', [ 'platform' => $row->platform, 'queue_id' => $row->id ] );
+            ( new ActionTimelineRepository() )->record( 'social_post_published', sanitize_key( $result['status'] ?? 'published' ), [ 'object_type' => 'social_queue', 'object_id' => (int) $row->id, 'notes' => 'Social post processed', 'metadata' => [ 'platform' => $row->platform, 'remote_post_id' => $result['remote_id'] ?? '', 'remote_url' => $result['url'] ?? '' ] ] );
         }
     }
 

@@ -28,7 +28,15 @@ class JobRegistrar {
         if ( ! function_exists( 'as_schedule_recurring_action' ) || ! function_exists( 'as_next_scheduled_action' ) ) {
             return;
         }
-        $intervals = [
+        foreach ( self::intervals() as $hook => $interval ) {
+            if ( ! as_next_scheduled_action( $hook, [], self::GROUP ) ) {
+                as_schedule_recurring_action( time() + MINUTE_IN_SECONDS, $interval, $hook, [], self::GROUP );
+            }
+        }
+    }
+
+    public static function intervals(): array {
+        return [
             'onkupon_agent_product_scan' => 6 * HOUR_IN_SECONDS,
             'onkupon_agent_research'     => 2 * HOUR_IN_SECONDS,
             'onkupon_agent_content'      => 4 * HOUR_IN_SECONDS,
@@ -39,11 +47,6 @@ class JobRegistrar {
             'onkupon_agent_reviews'      => DAY_IN_SECONDS,
             'onkupon_agent_cleanup'      => WEEK_IN_SECONDS,
         ];
-        foreach ( $intervals as $hook => $interval ) {
-            if ( ! as_next_scheduled_action( $hook, [], self::GROUP ) ) {
-                as_schedule_recurring_action( time() + MINUTE_IN_SECONDS, $interval, $hook, [], self::GROUP );
-            }
-        }
     }
 
     public static function unschedule_all(): void {

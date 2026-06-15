@@ -5,6 +5,8 @@ use OnKupon\Agent\Admin\AdminMenu;
 use OnKupon\Agent\CLI\Command;
 use OnKupon\Agent\Publishing\SchemaWriter;
 use OnKupon\Agent\Scheduler\JobRegistrar;
+use OnKupon\Agent\Scheduler\SchedulerDiagnostics;
+use OnKupon\Agent\Social\OAuth\SocialOAuthManager;
 use OnKupon\Agent\Woo\ProductLinker;
 
 class Plugin {
@@ -21,6 +23,8 @@ class Plugin {
         ( new JobRegistrar() )->register();
         ( new ProductLinker() )->register_shortcodes();
         ( new SchemaWriter() )->register();
+        ( new SocialOAuthManager() )->register_routes();
+        add_action( 'admin_init', [ new SchedulerDiagnostics(), 'repair_missing' ] );
 
         if ( defined( 'WP_CLI' ) && WP_CLI ) {
             \WP_CLI::add_command( 'onkupon-agent', Command::class );
@@ -46,7 +50,25 @@ class Plugin {
             'preferred_products'           => '',
             'min_quality_score'            => 70,
             'max_risk_score'               => 35,
-            'min_article_words'            => 250,
+            'min_article_words'            => 600,
+            'target_article_words'         => 900,
+            'max_article_words'            => 1400,
+            'heading_count'                => 5,
+            'faq_count'                    => 4,
+            'product_link_count'           => 3,
+            'product_card_count'           => 3,
+            'default_post_category_id'     => 0,
+            'allowed_category_ids'         => '',
+            'category_strategy'            => 'fixed',
+            'default_author_id'            => 0,
+            'default_featured_image_id'    => 0,
+            'use_first_product_image_as_featured' => true,
+            'use_category_fallback_image'  => false,
+            'daily_social_post_limit'      => 10,
+            'x_allow_url_posts'            => false,
+            'x_daily_cost_limit'           => 0,
+            'x_text_only_mode'             => true,
+            'linkedin_daily_post_limit'    => 3,
             'openai_base_url'              => 'https://api.openai.com/v1',
             'openai_model'                 => 'gpt-4o-mini',
             'openai_temperature'           => 0.3,

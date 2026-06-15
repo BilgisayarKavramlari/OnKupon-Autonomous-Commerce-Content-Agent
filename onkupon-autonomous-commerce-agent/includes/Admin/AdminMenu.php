@@ -2,8 +2,11 @@
 namespace OnKupon\Agent\Admin;
 
 use OnKupon\Agent\Logging\Logger;
+use OnKupon\Agent\Logging\ActionTimelineRepository;
 use OnKupon\Agent\Plugin;
 use OnKupon\Agent\Scheduler\ActionSchedulerBridge;
+use OnKupon\Agent\Scheduler\JobRegistrar;
+use OnKupon\Agent\Scheduler\SchedulerDiagnostics;
 use OnKupon\Agent\Security\CapabilityManager;
 use OnKupon\Agent\Security\LockManager;
 
@@ -19,6 +22,7 @@ class AdminMenu {
         add_menu_page( 'OnKupon Agent', 'OnKupon Agent', $capability, 'onkupon-agent', [ new DashboardPage(), 'render' ], 'dashicons-chart-line', 56 );
         $pages = [
             'Control Center'       => ControlCenterPage::class,
+            'Scheduler Health'     => SchedulerHealthPage::class,
             'Content Timeline'     => ContentTimelinePage::class,
             'Product Intelligence' => ProductIntelligencePage::class,
             'Social Queue'         => SocialQueuePage::class,
@@ -75,6 +79,50 @@ class AdminMenu {
                 $redirect_args['oka_actions'] = 3;
                 $redirect_args['oka_scheduler'] = $bridge->available() ? 'yes' : 'no';
                 break;
+            case 'run-diagnostics':
+                $report = ( new SchedulerDiagnostics() )->report();
+                $redirect_args['oka_run_now'] = 1;
+                $redirect_args['oka_actions'] = count( $report['hooks'] ?? [] );
+                $redirect_args['oka_scheduler'] = ! empty( $report['action_scheduler_available'] ) ? 'yes' : 'no';
+                break;
+            case 'reschedule-all-jobs':
+                JobRegistrar::unschedule_all();
+                JobRegistrar::schedule_defaults();
+                $redirect_args['oka_run_now'] = 1;
+                $redirect_args['oka_actions'] = count( JobRegistrar::hooks() );
+                $redirect_args['oka_scheduler'] = $bridge->available() ? 'yes' : 'no';
+                break;
+            case 'clear-onkupon-jobs':
+                JobRegistrar::unschedule_all();
+                break;
+            case 'run-product-scan-now':
+                $bridge->enqueue( 'onkupon_agent_product_scan' );
+                break;
+            case 'run-research-now':
+                $bridge->enqueue( 'onkupon_agent_research' );
+                break;
+            case 'run-content-generation-now':
+                $bridge->enqueue( 'onkupon_agent_content' );
+                break;
+            case 'run-publishing-now':
+                $bridge->enqueue( 'onkupon_agent_publish' );
+                break;
+            case 'run-social-queue-now':
+                $bridge->enqueue( 'onkupon_agent_social' );
+                break;
+            case 'run-metrics-now':
+                $bridge->enqueue( 'onkupon_agent_metrics' );
+                break;
+            case 'run-learning-now':
+                $bridge->enqueue( 'onkupon_agent_learning' );
+                break;
+            case 'run-content-generation-debug':
+                @set_time_limit( 60 );
+                ( new \OnKupon\Agent\Scheduler\Jobs\ContentGenerationJob() )->handle();
+                $redirect_args['oka_run_now'] = 1;
+                $redirect_args['oka_actions'] = 1;
+                $redirect_args['oka_scheduler'] = 'synchronous-debug';
+                break;
             case 'collect-metrics':
                 $bridge->enqueue( 'onkupon_agent_metrics' );
                 break;
@@ -92,6 +140,7 @@ class AdminMenu {
         }
 
         ( new Logger() )->log( 'info', 'audit', 'Control action executed', [ 'action' => $action, 'user' => get_current_user_id() ] );
+        ( new ActionTimelineRepository() )->record( 'admin_control', 'completed', [ 'notes' => 'Control action executed: ' . $action, 'metadata' => [ 'action' => $action, 'user' => get_current_user_id() ] ] );
         wp_safe_redirect( add_query_arg( $redirect_args, admin_url( 'admin.php' ) ) );
         exit;
     }
