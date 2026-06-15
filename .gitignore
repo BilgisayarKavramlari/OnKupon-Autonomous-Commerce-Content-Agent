@@ -1,0 +1,15 @@
+# Generated plugin packages and build output
+*.zip
+dist/
+build/
+.onkupon-agent-build/
+
+# Dependencies
+vendor/
+node_modules/
+
+# OS/editor/log artifacts
+.DS_Store
+*.log
+.env
+.env.*

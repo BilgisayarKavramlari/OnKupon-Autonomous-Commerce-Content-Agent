@@ -1,0 +1,1 @@
+{"name":"onkupon-autonomous-commerce-agent","version":"0.1.0","private":true,"scripts":{"build:zip":"bash bin/build-zip.sh","test":"bash bin/run-tests.sh"},"devDependencies":{}}
