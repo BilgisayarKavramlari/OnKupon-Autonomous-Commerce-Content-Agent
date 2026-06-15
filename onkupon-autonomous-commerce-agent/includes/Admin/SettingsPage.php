@@ -12,7 +12,7 @@ class SettingsPage extends BasePage {
             $fields = [ 'daily_article_limit', 'daily_social_limit', 'min_quality_score', 'max_risk_score', 'min_article_words', 'content_language', 'openai_base_url', 'openai_model', 'openai_temperature', 'openai_max_tokens', 'daily_budget', 'request_timeout', 'rss_sources', 'source_allowlist', 'source_blocklist', 'target_categories', 'excluded_categories', 'excluded_products', 'preferred_products', 'exploration_rate', 'review_delay_days', 'review_max_reminders' ];
             foreach ( $fields as $field ) {
                 if ( 'min_article_words' === $field ) {
-                    $settings[ $field ] = max( 50, absint( wp_unslash( $_POST[ $field ] ?? $settings[ $field ] ?? 350 ) ) );
+                    $settings[ $field ] = max( 50, absint( wp_unslash( $_POST[ $field ] ?? $settings[ $field ] ?? 250 ) ) );
                     continue;
                 }
                 $settings[ $field ] = sanitize_text_field( wp_unslash( $_POST[ $field ] ?? $settings[ $field ] ?? '' ) );

@@ -50,6 +50,7 @@ class AdminMenu {
         check_admin_referer( 'onkupon_agent_control' );
         $action = sanitize_key( wp_unslash( $_POST['agent_action'] ?? '' ) );
         $bridge = new ActionSchedulerBridge();
+        $redirect_args = [ 'page' => 'onkupon-agent-control-center', 'oka_notice' => 'ok' ];
 
         switch ( $action ) {
             case 'start':
@@ -70,6 +71,9 @@ class AdminMenu {
                 $bridge->enqueue( 'onkupon_agent_product_scan' );
                 $bridge->enqueue( 'onkupon_agent_research' );
                 $bridge->enqueue( 'onkupon_agent_content' );
+                $redirect_args['oka_run_now'] = 1;
+                $redirect_args['oka_actions'] = 3;
+                $redirect_args['oka_scheduler'] = $bridge->available() ? 'yes' : 'no';
                 break;
             case 'collect-metrics':
                 $bridge->enqueue( 'onkupon_agent_metrics' );
@@ -88,7 +92,7 @@ class AdminMenu {
         }
 
         ( new Logger() )->log( 'info', 'audit', 'Control action executed', [ 'action' => $action, 'user' => get_current_user_id() ] );
-        wp_safe_redirect( add_query_arg( [ 'page' => 'onkupon-agent-control-center', 'oka_notice' => 'ok' ], admin_url( 'admin.php' ) ) );
+        wp_safe_redirect( add_query_arg( $redirect_args, admin_url( 'admin.php' ) ) );
         exit;
     }
 }

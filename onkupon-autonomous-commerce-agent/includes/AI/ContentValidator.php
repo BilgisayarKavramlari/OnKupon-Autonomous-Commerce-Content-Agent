@@ -47,7 +47,7 @@ class ContentValidator {
     }
 
     private function min_article_words(): int {
-        return max( 50, absint( Plugin::settings()['min_article_words'] ?? 350 ) );
+        return max( 50, absint( Plugin::settings()['min_article_words'] ?? 250 ) );
     }
 
     private function normalize_scores( array $article ): array {
@@ -71,6 +71,8 @@ class ContentValidator {
             'word_count' => $word_count,
             'min_article_words' => $min_words,
             'body_char_length' => $char_length,
+            'language' => sanitize_text_field( (string) ( Plugin::settings()['content_language'] ?? 'en' ) ),
+            'validator_method' => 'unicode_preg_match_all',
             'title' => sanitize_text_field( (string) ( $article['seo_title'] ?? $article['title'] ?? '' ) ),
             'quality_score' => isset( $article['quality_score'] ) ? (float) $article['quality_score'] : null,
             'risk_score' => isset( $article['risk_score'] ) ? (float) $article['risk_score'] : null,

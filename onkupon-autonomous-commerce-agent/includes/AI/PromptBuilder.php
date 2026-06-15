@@ -5,7 +5,7 @@ use OnKupon\Agent\Plugin;
 
 class PromptBuilder {
     public function article_prompt( array $products, array $research, array $strategy = [] ): string {
-        $min_words = max( 50, absint( Plugin::settings()['min_article_words'] ?? 350 ) );
+        $min_words = max( 50, absint( Plugin::settings()['min_article_words'] ?? 250 ) );
         $payload = [
             'instruction' => 'Return JSON only for a factual OnKupon editorial article. Do not use markdown fences. Do not include prose outside JSON. Do not create customer reviews, fake ratings, medical/legal/financial guarantees, or unsupported claims.',
             'body_requirements' => [

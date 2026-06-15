@@ -66,7 +66,7 @@ Settings support base URL, model, temperature, max tokens, timeout, and daily bu
 
 ## Publishing and validation
 
-Articles are generated as strict JSON and must pass schema, required-field, quality, risk, thin-content, unsafe-claim, keyword-stuffing, and HTML sanitization checks before publishing. Invalid content is logged and rejected.
+Articles are generated as strict JSON and must pass schema, required-field, quality, risk, thin-content, unsafe-claim, keyword-stuffing, and HTML sanitization checks before publishing. Invalid content is logged, rejected, and persisted to the Content Timeline with diagnostics and a sanitized preview.
 
 ## Social publishing
 
@@ -77,6 +77,18 @@ The social queue stores queued and processed posts. Provider stubs are present f
 The plugin does not create fake customer reviews, fake ratings, fake 5-star claims, customer impersonation, or fake social proof. Review Integrity supports verified-buyer review request workflows and clearly labeled editorial/AI-assisted product insights only.
 
 
+## Troubleshooting: Content Timeline is empty
+
+If article generation appears to fail but **OnKupon Agent → Content Timeline** is empty, first confirm that the content generation job actually ran. The **Run Now** button queues product scan, research, and content generation actions; after clicking it, the admin notice shows how many actions were queued and whether Action Scheduler is available.
+
+Check **WooCommerce → Status → Scheduled Actions** for pending, running, failed, or completed OnKupon actions. If Action Scheduler is unavailable, the plugin falls back to WP-Cron single events, so make sure WordPress cron is running.
+
+Rejected article candidates are saved to the timeline with `rejected` status, validation notes, word count, quality/risk scores, and a short sanitized preview.
+
+## Troubleshooting: Action Scheduler pending jobs
+
+If jobs remain pending, check **WooCommerce → Status → Scheduled Actions** and filter for `onkupon_agent_*` hooks. Confirm WP-Cron or a real server cron is running due events. A recommended cron command is shown below.
+
 ## Troubleshooting: Article rejected: Content is too thin
 
 If the admin log shows `warning | validation | Article rejected` with `Content is too thin`, the generated article body did not meet the configured word-count threshold. The validator now uses Unicode-aware word counting for Turkish and other non-English content, so words with Turkish characters are counted correctly.
@@ -84,10 +96,12 @@ If the admin log shows `warning | validation | Article rejected` with `Content i
 Recommended fixes:
 
 - Increase `openai_max_tokens` so the model has enough output budget for a long-form article.
-- Lower `min_article_words` temporarily for testing; the setting defaults to `350` and the UI enforces a minimum of `50`.
+- Lower `min_article_words` temporarily for testing; the setting defaults to `250` and the UI enforces a minimum of `50`.
 - Ensure WooCommerce has active product data so the prompt can build product-aware sections.
 - Ensure the prompt asks for a long-form body; the built-in prompt explicitly requires at least `min_article_words`, natural Turkish paragraphs with headings, concise answer, FAQ, product-aware sections, and CTA.
 - Review the validation log context, which includes word count, minimum required words, body character length, title, scores, related product IDs, a sanitized body preview, and rejection reasons.
+
+To inspect scheduled jobs in WordPress Admin, open **WooCommerce → Status → Scheduled Actions** and search for `onkupon_agent_content`, `onkupon_agent_research`, or `onkupon_agent_product_scan`.
 
 ## WP-CLI
 
