@@ -1,6 +1,7 @@
 <?php
 namespace OnKupon\Agent\Publishing;
 
+use OnKupon\Agent\Logging\Logger;
 use OnKupon\Agent\Plugin;
 
 class AuthorManager {
@@ -11,9 +12,12 @@ class AuthorManager {
         }
         $current = get_current_user_id();
         if ( $current ) {
+            ( new Logger() )->log( 'info', 'publishing', 'Default author missing; using current admin as post author', [ 'author_id' => $current ] );
             return $current;
         }
         $admins = get_users( [ 'role' => 'administrator', 'number' => 1, 'fields' => 'ids' ] );
-        return absint( $admins[0] ?? 1 );
+        $fallback = absint( $admins[0] ?? 1 );
+        ( new Logger() )->log( 'warning', 'publishing', 'Default author missing; using first administrator as post author', [ 'author_id' => $fallback ] );
+        return $fallback;
     }
 }

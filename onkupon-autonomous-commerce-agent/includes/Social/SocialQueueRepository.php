@@ -62,10 +62,14 @@ class SocialQueueRepository {
             ( new Logger() )->log( 'warning', 'social', 'Social dry run skipped because no published OnKupon Agent post exists' );
             return 0;
         }
-        $id = $this->queue( new SocialPost( 'dry_run', 'Dry-run social queue test for: ' . get_permalink( $post_id ), $post_id ) );
-        $wpdb->update( $wpdb->prefix . 'onkupon_agent_social_queue', [ 'status' => 'dry_run', 'last_error' => 'Dry run only; no external provider called.', 'updated_at' => current_time( 'mysql' ) ], [ 'id' => $id ] );
-        ( new ActionTimelineRepository() )->record( 'social_dry_run', 'dry_run', [ 'object_type' => 'social_queue', 'object_id' => $id, 'notes' => 'Dry-run social queue item created without external posting', 'metadata' => [ 'post_id' => $post_id, 'post_url' => get_permalink( $post_id ) ] ] );
-        return $id;
+        $first_id = 0;
+        foreach ( [ 'linkedin', 'x', 'facebook', 'quora_suggestion' ] as $platform ) {
+            $id = $this->queue( new SocialPost( $platform, '[' . $platform . ' dry run] ' . get_the_title( $post_id ) . ' ' . get_permalink( $post_id ), $post_id ) );
+            $first_id = $first_id ?: $id;
+            $wpdb->update( $wpdb->prefix . 'onkupon_agent_social_queue', [ 'status' => 'dry_run', 'last_error' => 'Dry run only; no external provider called.', 'updated_at' => current_time( 'mysql' ) ], [ 'id' => $id ] );
+            ( new ActionTimelineRepository() )->record( 'social_dry_run', 'dry_run', [ 'object_type' => 'social_queue', 'object_id' => $id, 'notes' => 'Dry-run social queue item created without external posting', 'metadata' => [ 'platform' => $platform, 'post_id' => $post_id, 'post_url' => get_permalink( $post_id ) ] ] );
+        }
+        return $first_id;
     }
 
     private function provider_for( string $platform ): ?SocialProviderInterface {

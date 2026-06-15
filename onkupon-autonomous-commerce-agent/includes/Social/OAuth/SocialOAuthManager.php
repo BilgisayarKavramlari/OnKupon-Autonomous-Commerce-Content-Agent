@@ -22,8 +22,19 @@ class SocialOAuthManager {
             ( new Logger() )->log( 'warning', 'social_oauth', 'OAuth callback rejected due to invalid state', [ 'provider' => $provider ] );
             return new \WP_REST_Response( [ 'error' => 'invalid_state' ], 403 );
         }
-        ( new Logger() )->log( 'info', 'social_oauth', 'OAuth callback received; exchange token in provider settings', [ 'provider' => $provider ] );
-        return new \WP_REST_Response( [ 'status' => 'received', 'provider' => $provider ], 200 );
+        $code = sanitize_text_field( (string) $request->get_param( 'code' ) );
+        $token = 'linkedin' === $provider ? ( new LinkedInOAuthProvider() )->exchange_code( $code ) : ( new XOAuthProvider() )->exchange_code( $code );
+        if ( empty( $token['access_token'] ) ) {
+            ( new Logger() )->log( 'error', 'social_oauth', 'OAuth token exchange failed', [ 'provider' => $provider, 'response' => wp_json_encode( $token ) ] );
+            return new \WP_REST_Response( [ 'error' => 'token_exchange_failed' ], 400 );
+        }
+        $settings = get_option( 'onkupon_agent_social_oauth', [] );
+        $settings[ $provider ]['access_token'] = sanitize_text_field( (string) $token['access_token'] );
+        $settings[ $provider ]['refresh_token'] = sanitize_text_field( (string) ( $token['refresh_token'] ?? '' ) );
+        $settings[ $provider ]['expires_at'] = time() + absint( $token['expires_in'] ?? 0 );
+        update_option( 'onkupon_agent_social_oauth', $settings, false );
+        ( new Logger() )->log( 'info', 'social_oauth', 'OAuth token stored', [ 'provider' => $provider, 'token' => '***masked***' ] );
+        return new \WP_REST_Response( [ 'status' => 'connected', 'provider' => $provider ], 200 );
     }
 
     public static function masked_status( string $provider ): array {

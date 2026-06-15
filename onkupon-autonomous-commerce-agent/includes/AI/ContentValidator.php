@@ -53,7 +53,7 @@ class ContentValidator {
     }
 
     private function min_article_words(): int {
-        return max( 100, absint( Plugin::settings()['min_article_words'] ?? 600 ) );
+        return max( 100, absint( Plugin::settings()['min_article_words'] ?? 800 ) );
     }
 
     private function normalize_scores( array $article ): array {
@@ -76,11 +76,11 @@ class ContentValidator {
         return [
             'word_count' => $word_count,
             'min_article_words' => $min_words,
-            'target_article_words' => absint( Plugin::settings()['target_article_words'] ?? 900 ),
+            'target_article_words' => absint( Plugin::settings()['target_article_words'] ?? 1400 ),
             'body_char_length' => $char_length,
             'section_count' => count( (array) ( $article['sections'] ?? [] ) ),
             'faq_count' => count( (array) ( $article['faq'] ?? [] ) ),
-            'product_link_count' => count( (array) ( $article['product_mentions'] ?? [] ) ),
+            'product_link_count' => count( (array) ( $article['product_mentions'] ?? $article['product_recommendations'] ?? [] ) ),
             'language' => sanitize_text_field( (string) ( Plugin::settings()['content_language'] ?? 'en' ) ),
             'validator_method' => 'unicode_preg_match_all',
             'error_codes' => array_values( array_unique( $error_codes ) ),
@@ -111,7 +111,7 @@ class ContentValidator {
     }
 
     private function structured_body( array $article ): string {
-        $parts = [ (string) ( $article['concise_answer'] ?? '' ) ];
+        $parts = [ (string) ( $article['concise_answer'] ?? '' ), (string) ( $article['introduction'] ?? '' ) ];
         foreach ( (array) ( $article['sections'] ?? [] ) as $section ) {
             $parts[] = (string) ( $section['heading'] ?? '' );
             $parts[] = (string) ( $section['body'] ?? '' );
@@ -119,6 +119,11 @@ class ContentValidator {
         foreach ( (array) ( $article['faq'] ?? [] ) as $faq ) {
             $parts[] = (string) ( $faq['question'] ?? '' );
             $parts[] = (string) ( $faq['answer'] ?? '' );
+        }
+        foreach ( (array) ( $article['product_recommendations'] ?? [] ) as $recommendation ) {
+            $parts[] = (string) ( $recommendation['anchor_text'] ?? '' );
+            $parts[] = (string) ( $recommendation['reason'] ?? '' );
+            $parts[] = (string) ( $recommendation['use_case'] ?? '' );
         }
         $parts[] = (string) ( $article['cta'] ?? '' );
         return implode( "\n\n", $parts );

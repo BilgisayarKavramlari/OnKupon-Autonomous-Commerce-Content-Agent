@@ -1,5 +1,7 @@
 # OnKupon Autonomous Commerce Content Agent
 
+Current plugin version: **0.1.1**.
+
 OnKupon Autonomous Commerce Content Agent is a source-only WordPress/WooCommerce plugin that keeps a marketplace/content-commerce site fresh by scanning active products, researching trusted sources, generating strict JSON editorial article plans through an OpenAI-compatible provider, validating content, publishing approved articles automatically, queueing social posts, collecting analytics, and updating learning weights.
 
 The runtime plugin **never** calls Codex CLI, shells out to ChatGPT/Codex, executes arbitrary model-generated commands, or dynamically writes PHP code. All AI, research, and social integrations sit behind provider interfaces.
@@ -22,6 +24,7 @@ The plugin adds a top-level **OnKupon Agent** menu with:
 
 - Overview
 - Control Center
+- Scheduler Health
 - Content Timeline
 - Product Intelligence
 - Social Queue
@@ -32,7 +35,15 @@ The plugin adds a top-level **OnKupon Agent** menu with:
 - Review Integrity
 - Settings
 
-Control Center actions require admin capability, nonce verification, and audit logging. Available controls include start, pause, resume, stop, emergency stop, run now, collect metrics, recalculate scores, clear locks, and safe mode toggle.
+Control Center actions require admin capability, nonce verification, and audit logging. Available controls include start, pause, resume, stop, emergency stop, run now, synchronous content generation debug, test social queue, collect metrics, recalculate scores, clear locks, and safe mode toggle.
+
+## Versioning rules
+
+Every PR that changes plugin runtime behavior must bump the plugin version in the main plugin header, `ONKUPON_AGENT_VERSION`, package metadata, README, and CHANGELOG.
+
+## Duplicate admin menus
+
+The admin menu registration is idempotent and the top-level submenu is labeled **Overview**. If menus still appear duplicated, multiple plugin copies may be active; keep only one `onkupon-autonomous-commerce-agent` plugin folder active.
 
 ## Action Scheduler
 
@@ -96,7 +107,7 @@ If the admin log shows `warning | validation | Article rejected` with `Content i
 Recommended fixes:
 
 - Increase `openai_max_tokens` so the model has enough output budget for a long-form article.
-- Lower `min_article_words` temporarily for testing; the setting defaults to `600` and the UI enforces a minimum of `100`.
+- Lower `min_article_words` temporarily for testing; the setting defaults to `800` and the UI enforces a minimum of `100`.
 - Ensure WooCommerce has active product data so the prompt can build product-aware sections.
 - Ensure the prompt asks for a long-form body; the built-in prompt explicitly requires at least `min_article_words`, natural Turkish paragraphs with headings, concise answer, FAQ, product-aware sections, and CTA.
 - Review the validation log context, which includes word count, minimum required words, body character length, title, scores, related product IDs, a sanitized body preview, and rejection reasons.
@@ -174,9 +185,15 @@ If Action Scheduler functions are unavailable, immediate job requests use WP-Cro
 
 Generated articles are requested as structured JSON and formatted into WordPress/Gutenberg-compatible blocks: headings, paragraphs, tables, FAQ sections, CTA blocks, and product-card shortcode blocks. Raw Markdown headings, Markdown links, and fenced code blocks are rejected before publishing.
 
+## Long-form article configuration
+
+Defaults are tuned for long-form commerce content: `min_article_words=800`, `target_article_words=1400`, `max_article_words=2200`, `heading_count=7`, `faq_count=5`, `product_link_count=5`, `product_card_count=3`, comparison tables enabled, and viral-title guidance enabled. Adjust these in **OnKupon Agent → Settings**.
+
 ## Category/tag/author/featured-image management
 
 The publisher assigns post categories through `CategoryManager`, tags through `TagManager`, author through `AuthorManager`, and featured images through `FeaturedImageManager`. Configure default category, allowlisted categories, default author, and default featured image from settings.
+
+If posts appear as **Uncategorized**, configure `default_post_category_id`, `allowed_category_ids`, or enable `allow_create_categories` with the `create_if_allowed` strategy. When creation is enabled, the plugin can create sanitized recommended categories such as `Yapay Zeka`, `Otomasyon`, `E-Ticaret Araçları`, `Dijital Pazarlama`, `Eğitim ve Verimlilik`, and `OnKupon Rehberleri`.
 
 ## AIOSEO integration
 
@@ -193,6 +210,10 @@ X posting must use official OAuth/API access and `POST /2/tweets`. Configure X a
 ## Quora manual suggestions
 
 Quora remains manual suggestion mode unless a compliant official organic posting API is configured. The plugin can generate answer suggestions for manual copy/review, but it does not automate browser posting.
+
+## Social dry-run testing
+
+Use **OnKupon Agent → Control Center → Test Social Queue** after a successful article publish. The plugin creates dry-run LinkedIn, X, Facebook, and Quora suggestion queue rows for the latest OnKupon Agent post without calling external APIs.
 
 ## Troubleshooting: Run Now logs audit only
 

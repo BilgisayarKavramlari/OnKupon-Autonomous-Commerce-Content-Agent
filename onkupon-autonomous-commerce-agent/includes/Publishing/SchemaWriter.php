@@ -27,6 +27,12 @@ class SchemaWriter {
                 '@type' => 'BreadcrumbList',
                 'itemListElement' => [ [ '@type' => 'ListItem', 'position' => 1, 'name' => get_bloginfo( 'name' ), 'item' => home_url( '/' ) ], [ '@type' => 'ListItem', 'position' => 2, 'name' => get_the_title( $post_id ), 'item' => get_permalink( $post_id ) ] ],
             ],
+            [
+                '@context' => 'https://schema.org',
+                '@type' => 'Organization',
+                'name' => get_bloginfo( 'name' ),
+                'url' => home_url( '/' ),
+            ],
         ];
         if ( is_array( $faq ) && $faq ) {
             $schema[] = [ '@context' => 'https://schema.org', '@type' => 'FAQPage', 'mainEntity' => array_map( static fn( $row ) => [ '@type' => 'Question', 'name' => sanitize_text_field( (string) ( $row['question'] ?? '' ) ), 'acceptedAnswer' => [ '@type' => 'Answer', 'text' => wp_strip_all_tags( (string) ( $row['answer'] ?? '' ) ) ] ], $faq ) ];

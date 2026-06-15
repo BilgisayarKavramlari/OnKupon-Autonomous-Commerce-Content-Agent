@@ -7,7 +7,8 @@ use OnKupon\Agent\Security\SecretsManager;
 
 class XProvider implements SocialProviderInterface {
     public function validateConnection(): bool {
-        return '' !== ( new SecretsManager() )->get( 'X_TOKEN' );
+        $settings = get_option( 'onkupon_agent_social_oauth', [] );
+        return '' !== ( new SecretsManager() )->get( 'X_TOKEN' ) || ! empty( $settings['x']['access_token'] );
     }
     public function publish( SocialPost $post ): array {
         if ( ! $this->validateConnection() ) {
@@ -18,7 +19,9 @@ class XProvider implements SocialProviderInterface {
         if ( ! empty( $settings['x_text_only_mode'] ) || empty( $settings['x_allow_url_posts'] ) ) {
             $message = preg_replace( '#https?://\S+#', '', $message );
         }
-        $response = wp_remote_post( 'https://api.x.com/2/tweets', [ 'timeout' => 20, 'headers' => [ 'Authorization' => 'Bearer ' . ( new SecretsManager() )->get( 'X_TOKEN' ), 'Content-Type' => 'application/json' ], 'body' => wp_json_encode( [ 'text' => trim( wp_trim_words( $message, 45, '' ) ) ] ) ] );
+        $oauth = get_option( 'onkupon_agent_social_oauth', [] );
+        $token = ( new SecretsManager() )->get( 'X_TOKEN' ) ?: (string) ( $oauth['x']['access_token'] ?? '' );
+        $response = wp_remote_post( 'https://api.x.com/2/tweets', [ 'timeout' => 20, 'headers' => [ 'Authorization' => 'Bearer ' . $token, 'Content-Type' => 'application/json' ], 'body' => wp_json_encode( [ 'text' => trim( wp_trim_words( $message, 45, '' ) ) ] ) ] );
         $code = wp_remote_retrieve_response_code( $response );
         $body = json_decode( wp_remote_retrieve_body( $response ), true );
         if ( is_wp_error( $response ) || $code >= 300 ) {

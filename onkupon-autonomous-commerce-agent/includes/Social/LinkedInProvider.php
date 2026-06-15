@@ -6,14 +6,15 @@ use OnKupon\Agent\Security\SecretsManager;
 
 class LinkedInProvider implements SocialProviderInterface {
     public function validateConnection(): bool {
-        return '' !== ( new SecretsManager() )->get( 'LINKEDIN_TOKEN' );
+        $settings = get_option( 'onkupon_agent_social_oauth', [] );
+        return '' !== ( new SecretsManager() )->get( 'LINKEDIN_TOKEN' ) || ! empty( $settings['linkedin']['access_token'] );
     }
     public function publish( SocialPost $post ): array {
         if ( ! $this->validateConnection() ) {
             return [ 'status' => 'failed', 'remote_id' => '', 'url' => '', 'error' => 'LinkedIn OAuth token missing' ];
         }
-        $token = ( new SecretsManager() )->get( 'LINKEDIN_TOKEN' );
         $settings = get_option( 'onkupon_agent_social_oauth', [] );
+        $token = ( new SecretsManager() )->get( 'LINKEDIN_TOKEN' ) ?: (string) ( $settings['linkedin']['access_token'] ?? '' );
         $author = sanitize_text_field( (string) ( $settings['linkedin']['author_urn'] ?? '' ) );
         if ( '' === $author ) {
             return [ 'status' => 'failed', 'remote_id' => '', 'url' => '', 'error' => 'LinkedIn author/member or organization URN missing' ];

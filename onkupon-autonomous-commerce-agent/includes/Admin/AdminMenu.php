@@ -11,16 +11,29 @@ use OnKupon\Agent\Security\CapabilityManager;
 use OnKupon\Agent\Security\LockManager;
 
 class AdminMenu {
+    private static bool $registered = false;
+    private static bool $menu_registered = false;
+
     public function register(): void {
+        if ( self::$registered ) {
+            return;
+        }
+        self::$registered = true;
         add_action( 'admin_menu', [ $this, 'menu' ] );
         add_action( 'admin_enqueue_scripts', [ $this, 'assets' ] );
         add_action( 'admin_post_onkupon_agent_control', [ $this, 'handle_control' ] );
+        add_action( 'admin_notices', [ $this, 'duplicate_notice' ] );
     }
 
     public function menu(): void {
+        if ( self::$menu_registered ) {
+            return;
+        }
+        self::$menu_registered = true;
         $capability = CapabilityManager::capability();
         add_menu_page( 'OnKupon Agent', 'OnKupon Agent', $capability, 'onkupon-agent', [ new DashboardPage(), 'render' ], 'dashicons-chart-line', 56 );
         $pages = [
+            'Overview'             => DashboardPage::class,
             'Control Center'       => ControlCenterPage::class,
             'Scheduler Health'     => SchedulerHealthPage::class,
             'Content Timeline'     => ContentTimelinePage::class,
@@ -34,7 +47,19 @@ class AdminMenu {
             'Settings'             => SettingsPage::class,
         ];
         foreach ( $pages as $title => $class ) {
-            add_submenu_page( 'onkupon-agent', $title, $title, $capability, 'onkupon-agent-' . sanitize_title( $title ), [ new $class(), 'render' ] );
+            $slug = 'Overview' === $title ? 'onkupon-agent' : 'onkupon-agent-' . sanitize_title( $title );
+            add_submenu_page( 'onkupon-agent', $title, $title, $capability, $slug, [ new $class(), 'render' ] );
+        }
+    }
+
+    public function duplicate_notice(): void {
+        if ( ! current_user_can( CapabilityManager::capability() ) ) {
+            return;
+        }
+        $active = (array) get_option( 'active_plugins', [] );
+        $matches = array_filter( $active, static fn( $plugin ) => str_contains( (string) $plugin, 'onkupon-autonomous-commerce-agent' ) );
+        if ( count( $matches ) > 1 ) {
+            echo '<div class="notice notice-warning"><p>' . esc_html__( 'Multiple OnKupon Agent plugin instances may be active. Please keep only one plugin folder active.', 'onkupon-agent' ) . '</p></div>';
         }
     }
 
