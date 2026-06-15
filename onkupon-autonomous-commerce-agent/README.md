@@ -105,6 +105,19 @@ bash onkupon-autonomous-commerce-agent/bin/run-tests.sh
 
 The current test script performs PHP syntax verification across source files. PHPUnit stubs are included for the core pure-logic modules and should be expanded with a WordPress test-suite bootstrap.
 
+
+## Build ZIP with GitHub Actions
+
+You can build the installable plugin ZIP without Codespaces or a local PHP setup:
+
+1. Go to the repository on GitHub and open **Actions**.
+2. Select **Build WordPress Plugin ZIP**.
+3. Click **Run workflow**.
+4. When the run completes, download the artifact named `onkupon-autonomous-commerce-agent`.
+5. Upload `onkupon-autonomous-commerce-agent.zip` to **WordPress Admin → Plugins → Add New → Upload Plugin**.
+
+The workflow lints PHP source files, builds the ZIP from the inner plugin folder only, excludes generated/dependency files, and uploads the ZIP as a workflow artifact. The generated ZIP must not be committed to this repository.
+
 ## Build
 
 ```bash
